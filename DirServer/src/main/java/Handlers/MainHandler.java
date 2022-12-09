@@ -117,13 +117,15 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
                 nettyBootstrap.connections.get(0).close();
                 break;
             case "/blacklist":
-                if (header[1].equals("show")) {
+                if (header.length > 1 && header[1].equals("show")) {
                     StringBuilder response = new StringBuilder();
                     int number = 1;
                     for (SocketAddress address : nettyBootstrap.blackList) {
                         response.append(number).append(". ").append(address).append("\n");
                     }
                     ctx.writeAndFlush(Unpooled.wrappedBuffer((response + messageConstructor()).getBytes()));
+                } else {
+                    ctx.writeAndFlush(Unpooled.wrappedBuffer(("empty args " + messageConstructor()).getBytes()));
                 }
                 break;
             default:
