@@ -31,13 +31,13 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         System.out.println("Client connected " + ctx.channel().localAddress());
-        if (nettyBootstrap.blackList.contains(ctx.channel().localAddress())){
+        if (nettyBootstrap.blackList.contains(ctx.channel().localAddress())) {
             ctx.disconnect();
         }
         nettyBootstrap.connections.add(ctx);
         System.out.println(UUID.randomUUID());
-        for (SocketAddress c:
-             nettyBootstrap.blackList) {
+        for (SocketAddress c :
+                nettyBootstrap.blackList) {
             System.out.println(c);
         }
     }
@@ -115,6 +115,16 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
                 break;
             case "/remove":
                 nettyBootstrap.connections.get(0).close();
+                break;
+            case "/blacklist":
+                if (header[1].equals("show")) {
+                    StringBuilder response = new StringBuilder();
+                    int number = 1;
+                    for (SocketAddress address : nettyBootstrap.blackList) {
+                        response.append(number).append(". ").append(address).append("\n");
+                    }
+                    ctx.writeAndFlush(Unpooled.wrappedBuffer((response + messageConstructor()).getBytes()));
+                }
                 break;
             default:
                 ctx.writeAndFlush(Unpooled.wrappedBuffer(("Unknown command" + messageConstructor()).getBytes()));
