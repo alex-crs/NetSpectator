@@ -1,30 +1,29 @@
-package Services;
+package services;
 
-import entities.Device;
+import handlers.ByteBufEncoder;
+import handlers.MainHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.apache.log4j.Logger;
-import Handlers.ByteBufEncoder;
-import Handlers.MainHandler;
 
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class nettyBootstrap {
+public class NettyBootstrap {
     private static EventLoopGroup auth;
     private static EventLoopGroup worker;
     public static HashMap<String, String> serverParams;
     private int PORT;
     private long requestInterval;
-    private static final Logger LOGGER = Logger.getLogger(nettyBootstrap.class);
+    private static final Logger LOGGER = Logger.getLogger(NettyBootstrap.class);
     public static List<ChannelHandlerContext> connections = new ArrayList<>();
     public static List<SocketAddress> blackList = new ArrayList<>();
 
-    public nettyBootstrap() {
+    public NettyBootstrap() {
         initParams();
         serverStart();
     }

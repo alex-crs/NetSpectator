@@ -1,4 +1,4 @@
-import Services.mainClientLogic;
+import services.mainClientLogic;
 
 public class ClientRun {
     public static void main(String[] args) {

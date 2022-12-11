@@ -1,4 +1,4 @@
-package Services;
+package services;
 
 
 import org.apache.log4j.Logger;
@@ -114,7 +114,7 @@ public class mainClientLogic {
         try {
             out.write(("\\auth " + connectionParams.get("Public key")).getBytes());
             while (keepAliveStatus) {
-                query = queryStringListener().split(" ");
+                query = queryStringListener().replace("\n", "").split(" ");
                 switch (query[0]) {
                     case "getId":
                         out.write(("\\clientID " + connectionParams.get("Client ID")).getBytes());

@@ -1,6 +1,6 @@
-package Handlers;
+package handlers;
 
-import Services.nettyBootstrap;
+import services.NettyBootstrap;
 import entities.Device;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -9,7 +9,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
@@ -31,15 +30,10 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         System.out.println("Client connected " + ctx.channel().localAddress());
-        if (nettyBootstrap.blackList.contains(ctx.channel().localAddress())) {
+        if (NettyBootstrap.blackList.contains(ctx.channel().localAddress())) {
             ctx.disconnect();
         }
-        nettyBootstrap.connections.add(ctx);
-        System.out.println(UUID.randomUUID());
-        for (SocketAddress c :
-                nettyBootstrap.blackList) {
-            System.out.println(c);
-        }
+        NettyBootstrap.connections.add(ctx);
     }
 
 
@@ -68,22 +62,22 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
         /*  \\ - автоматический режим работы агента, / - интерактивный режим работы агента */
         switch (header[0]) {
             case "/hello":
-                ctx.writeAndFlush(Unpooled.wrappedBuffer(("Welcome to Net Spectator server. " + messageConstructor()).getBytes()));
+                sendMessageWithHeader(ctx, "Welcome to Net Spectator server. ");
                 break;
             case "/auth":
-                if (header.length > 1 && header[1].equals(nettyBootstrap.serverParams.get("admin"))) {
+                if (header.length > 1 && header[1].equals(NettyBootstrap.serverParams.get("admin"))) {
                     isAuth = true;
-                    ctx.writeAndFlush(Unpooled.wrappedBuffer(("Authorization ok" + messageConstructor()).getBytes()));
+                    sendMessageWithHeader(ctx, "Authorization ok");
                 } else {
-                    ctx.writeAndFlush(Unpooled.wrappedBuffer(("Wrong key" + messageConstructor()).getBytes()));
+                    sendMessageWithHeader(ctx, "Wrong key");
                 }
                 break;
             case "\\auth":
-                if (header.length > 1 && header[1].equals(nettyBootstrap.serverParams.get("publicKey"))) {
+                if (header.length > 1 && header[1].equals(NettyBootstrap.serverParams.get("publicKey"))) {
                     isAuth = true;
-                    ctx.writeAndFlush(Unpooled.wrappedBuffer(("getId").getBytes()));
+                    sendMessage(ctx, "getId");
                 } else {
-                    nettyBootstrap.blackList.add(ctx.channel().localAddress());
+                    NettyBootstrap.blackList.add(ctx.channel().localAddress());
                     ctx.disconnect();
                 }
                 break;
@@ -94,44 +88,86 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
                     ctx.writeAndFlush(Unpooled.wrappedBuffer(("newID " + uuid).getBytes()));
                     LOGGER.info(String.format("Новому клиенту присвоен ID: [%s]", uuid));
                 }
-                ctx.writeAndFlush(Unpooled.wrappedBuffer(("getName").getBytes()));
+                sendMessage(ctx, "getName");
                 break;
             case "\\clientName":
                 LOGGER.info(String.format("Имя клиента: [%s]", header[1]));
                 break;
             case "/shutdown":
-                if (isAuth) {
-                    ctx.writeAndFlush(Unpooled.wrappedBuffer(("Server shutdown" + "\n").getBytes()));
-                    nettyBootstrap.shutdownServer();
-                } else {
-                    ctx.writeAndFlush(Unpooled.wrappedBuffer(("You are not authorized" + messageConstructor()).getBytes()));
-                }
-                break;
-            case "/connection-test":
-                ctx.writeAndFlush(Unpooled.wrappedBuffer(("/connection-test-ok" + messageConstructor()).getBytes()));
-                break;
-            case "\\connection-test":
-                ctx.writeAndFlush(Unpooled.wrappedBuffer(("/connection-test-ok").getBytes()));
-                break;
-            case "/remove":
-                nettyBootstrap.connections.get(0).close();
+                shutdownServer(ctx);
                 break;
             case "/blacklist":
-                if (header.length > 1 && header[1].equals("show")) {
-                    StringBuilder response = new StringBuilder();
-                    int number = 1;
-                    for (SocketAddress address : nettyBootstrap.blackList) {
-                        response.append(number).append(". ").append(address).append("\n");
-                    }
-                    ctx.writeAndFlush(Unpooled.wrappedBuffer((response + messageConstructor()).getBytes()));
-                } else {
-                    ctx.writeAndFlush(Unpooled.wrappedBuffer(("empty args " + messageConstructor()).getBytes()));
+                if (!blackListOperator(ctx, header)) {
+                    LOGGER.info("Bad command");
                 }
                 break;
             default:
-                ctx.writeAndFlush(Unpooled.wrappedBuffer(("Unknown command" + messageConstructor()).getBytes()));
+                sendMessageWithHeader(ctx, "Unknown command");
                 break;
         }
+    }
+
+
+    private void shutdownServer(ChannelHandlerContext ctx) {
+        if (isAuth) {
+            sendMessage(ctx, "Server shutdown");
+            NettyBootstrap.shutdownServer();
+        } else {
+            sendMessageWithHeader(ctx, "You are not authorized");
+        }
+    }
+
+    //проводит операции над черным списком
+    private boolean blackListOperator(ChannelHandlerContext ctx, String[] args) {
+        StringBuilder response = new StringBuilder();
+
+        if (!isAuth) {
+            ctx.writeAndFlush(Unpooled.wrappedBuffer(("Not authorized " + messageConstructor()).getBytes()));
+            return false;
+        }
+
+        if (args.length < 2) {
+            ctx.writeAndFlush(Unpooled.wrappedBuffer(("wrong args" + messageConstructor()).getBytes()));
+            return false;
+        }
+
+        switch (args[1]) {
+            case "show":
+                int finalIndex = 1;
+                NettyBootstrap.blackList.forEach(socketAddress -> response
+                        .append(finalIndex)
+                        .append(". ")
+                        .append(socketAddress)
+                        .append("\n"));
+                sendMessageWithHeader(ctx, (response.length() < 1 ? "empty" : response.toString()));
+                return true;
+            case "remove":
+                int index = 0;
+                try {
+                    index = Integer.parseInt(args[2]);
+                    NettyBootstrap.blackList.remove(index - 1);
+                } catch (NumberFormatException e) {
+                    sendMessageWithHeader(ctx, "Wrong index format");
+                    return false;
+                } catch (IndexOutOfBoundsException e) {
+                    sendMessageWithHeader(ctx, NettyBootstrap.blackList.size() == 0 ? "Empty blacklist" : "wrong index");
+                    return false;
+                }
+                sendMessageWithHeader(ctx, "Operation complete");
+                return true;
+            default:
+                sendMessageWithHeader(ctx, "Bad command");
+                break;
+        }
+        return false;
+    }
+
+    private void sendMessageWithHeader(ChannelHandlerContext ctx, String message) {
+        ctx.writeAndFlush(Unpooled.wrappedBuffer((message + messageConstructor()).getBytes()));
+    }
+
+    private void sendMessage(ChannelHandlerContext ctx, String message) {
+        ctx.writeAndFlush(Unpooled.wrappedBuffer((message + "\n").getBytes()));
     }
 
     private String messageConstructor() {
