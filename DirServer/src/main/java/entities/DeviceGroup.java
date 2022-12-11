@@ -9,8 +9,8 @@ import javax.persistence.*;
 @Data
 @Setter
 @Getter
-@Table(name = "Device")
-public class Device {
+@Table(name = "DeviceGroup")
+public class DeviceGroup {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,17 +18,6 @@ public class Device {
     int id;
 
     @Column
-    String UUID;
-
-    @Column
     String name;
 
-    @Column
-    String ip;
-
-    @Column
-    double hddFreeSpace;
-
-    @Column
-    int onlineStatus;
 }
