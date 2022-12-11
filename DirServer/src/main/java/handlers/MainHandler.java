@@ -9,8 +9,11 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MainHandler extends ChannelInboundHandlerAdapter {
     public static String DELIMITER = ";";
@@ -39,6 +42,7 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        NettyBootstrap.connections.remove(ctx);
         System.out.println("Client disconnected " + ctx.channel().localAddress());
     }
 
@@ -90,6 +94,11 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
                 }
                 sendMessage(ctx, "getName");
                 break;
+            case "/connections":
+                if (!connectionListOperator(ctx, header)) {
+                    LOGGER.info("Bad command");
+                }
+                break;
             case "\\clientName":
                 LOGGER.info(String.format("Имя клиента: [%s]", header[1]));
                 break;
@@ -120,32 +129,46 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
     //проводит операции над черным списком
     private boolean blackListOperator(ChannelHandlerContext ctx, String[] args) {
         StringBuilder response = new StringBuilder();
+        int index = 0;
 
         if (!isAuth) {
-            ctx.writeAndFlush(Unpooled.wrappedBuffer(("Not authorized " + messageConstructor()).getBytes()));
+            sendMessageWithHeader(ctx, "Not authorized");
             return false;
         }
 
         if (args.length < 2) {
-            ctx.writeAndFlush(Unpooled.wrappedBuffer(("wrong args" + messageConstructor()).getBytes()));
+            sendMessageWithHeader(ctx, "wrong args");
             return false;
         }
 
         switch (args[1]) {
             case "show":
-                int finalIndex = 1;
+                AtomicInteger finalIndex = new AtomicInteger(1);
                 NettyBootstrap.blackList.forEach(socketAddress -> response
-                        .append(finalIndex)
+                        .append(finalIndex.getAndIncrement())
                         .append(". ")
                         .append(socketAddress)
                         .append("\n"));
                 sendMessageWithHeader(ctx, (response.length() < 1 ? "empty" : response.toString()));
                 return true;
             case "remove":
-                int index = 0;
+
                 try {
                     index = Integer.parseInt(args[2]);
                     NettyBootstrap.blackList.remove(index - 1);
+                } catch (NumberFormatException e) {
+                    sendMessageWithHeader(ctx, "Wrong index format");
+                    return false;
+                } catch (IndexOutOfBoundsException e) {
+                    sendMessageWithHeader(ctx, NettyBootstrap.blackList.size() == 0 ? "Empty blacklist" : "wrong index");
+                    return false;
+                }
+                sendMessageWithHeader(ctx, "Operation complete");
+                return true;
+            case "add":
+                try {
+                    index = Integer.parseInt(args[2]);
+                    NettyBootstrap.blackList.add((NettyBootstrap.connections.get(index - 1)).channel().localAddress());
                 } catch (NumberFormatException e) {
                     sendMessageWithHeader(ctx, "Wrong index format");
                     return false;
@@ -159,6 +182,60 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
                 sendMessageWithHeader(ctx, "Bad command");
                 break;
         }
+        return false;
+    }
+
+    private boolean connectionListOperator(ChannelHandlerContext ctx, String[] args) {
+        StringBuilder response = new StringBuilder();
+
+        if (!isAuth) {
+            sendMessageWithHeader(ctx, "Not authorized");
+            return false;
+        }
+
+        if (args.length < 2) {
+            sendMessageWithHeader(ctx, "wrong args");
+            return false;
+        }
+
+        switch (args[1]) {
+            case "show":
+                AtomicInteger finalIndex = new AtomicInteger(1);
+                NettyBootstrap.connections.forEach(socketAddress -> response
+                        .append(finalIndex.getAndIncrement())
+                        .append(". ")
+                        .append(socketAddress)
+                        .append("\n"));
+                sendMessageWithHeader(ctx, response.toString());
+                return true;
+
+            case "close":
+                int index = 0;
+                try {
+                    index = Integer.parseInt(args[2]);
+                    NettyBootstrap.connections.get(index - 1).disconnect();
+                    NettyBootstrap.connections.remove(index - 1);
+                } catch (NumberFormatException e) {
+                    sendMessageWithHeader(ctx, "Wrong index format");
+                    return false;
+                } catch (IndexOutOfBoundsException e) {
+                    sendMessageWithHeader(ctx, "wrong index");
+                    return false;
+                }
+                sendMessageWithHeader(ctx, "Operation complete");
+                return true;
+
+            case "blacklist":
+                return blackListOperator(ctx, Arrays.copyOfRange(args, 1, args.length));
+            case "this":
+                sendMessageWithHeader(ctx, ctx.channel().remoteAddress().toString());
+                return true;
+
+            default:
+                sendMessageWithHeader(ctx, "Bad command");
+                break;
+        }
+
         return false;
     }
 
@@ -176,3 +253,4 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
     }
 
 }
+

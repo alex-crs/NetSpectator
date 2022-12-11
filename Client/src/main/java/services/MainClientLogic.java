@@ -6,6 +6,7 @@ import org.apache.log4j.Logger;
 import java.io.*;
 import java.net.Inet4Address;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
@@ -16,7 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-public class mainClientLogic {
+public class MainClientLogic {
     private DataOutputStream out;
     private DataInputStream in;
     private ReadableByteChannel rbc;
@@ -27,13 +28,13 @@ public class mainClientLogic {
     private String ADDRESS;
     private int PORT;
     private boolean isInteractive;
-    private static final Logger LOGGER = Logger.getLogger(mainClientLogic.class);
+    private static final Logger LOGGER = Logger.getLogger(MainClientLogic.class);
 
     public HashMap<String, String> getServerParams() {
         return connectionParams;
     }
 
-    public mainClientLogic() {
+    public MainClientLogic() {
         paramsInit();
         tryToConnect();
     }
@@ -141,9 +142,12 @@ public class mainClientLogic {
         int readNumberBytes = 0;
         try {
             readNumberBytes = rbc.read(byteBuffer);
-        } catch (IOException e) {
-            e.printStackTrace();
-            LOGGER.error("Error receiving a response from the server");
+        } catch (SocketException e) {
+            LOGGER.error("Connection closed");
+            return "close";
+        } catch (IOException e){
+            LOGGER.error("IO exception detected");
+            return "close";
         }
 
         String queryAnswer = null;
