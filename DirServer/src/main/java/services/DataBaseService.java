@@ -1,17 +1,18 @@
 package services;
 
 import entities.Device;
-import handlers.MainHandler;
 import org.apache.log4j.Logger;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
+import javax.persistence.NoResultException;
 import javax.transaction.Transactional;
+import java.util.Optional;
 
 @Transactional
-public class dataBaseService {
-    private static final Logger LOGGER = Logger.getLogger(dataBaseService.class);
+public class DataBaseService {
+    private static final Logger LOGGER = Logger.getLogger(DataBaseService.class);
 
     SessionFactory factory = new Configuration() //удалить
             .configure("hibernate.cfg.xml")
@@ -32,20 +33,37 @@ public class dataBaseService {
     }
 
     //добавляет новое устройство в базу данных
-    public static int addDevice(Device device){
-
+    public int addDevice(Device device) {
+        session = factory.getCurrentSession();
+        session.beginTransaction();
+        session.save(device);
+        session.getTransaction().commit();
         return -1;
     }
 
+    public Device getDeviceByUUID(String uuid) {
+        session = factory.getCurrentSession();
+        session.beginTransaction();
+        Device device = null;
+        try {
+            device = (Device) session.createQuery("from Device where UUID=:uuid").setParameter("uuid", uuid).getSingleResult();
+        } catch (NoResultException e) {
+            session.getTransaction().commit();
+            return null;
+        }
+        session.getTransaction().commit();
+        return device;
+    }
+
     //удаляет выбранное устройство из базы данных
-    public static int deleteDevice(Device device){
+    public static int deleteDevice(Device device) {
 
         return -1;
     }
 
     //изменяет статус устройства (мне кажется этот метод не понадобиться
     //так как после подключения hibernate наблюдает за объектами
-    public static int changeDeviceStatus(Device device){
+    public static int changeDeviceStatus(Device device) {
 
         return -1;
     }

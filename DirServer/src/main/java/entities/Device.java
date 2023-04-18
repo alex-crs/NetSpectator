@@ -1,34 +1,39 @@
 package entities;
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 
 import javax.persistence.*;
 
+
 @Data
-@Setter
-@Getter
+@NoArgsConstructor
+@Entity
 @Table(name = "Device")
 public class Device {
     @Id
-    @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     @Basic
-    int id;
+    private int id;
 
     @Column
-    String UUID;
+    private String UUID;
 
     @Column
-    String name;
+    private String title;
 
     @Column
-    String ip;
+    private String ip;
 
     @Column
-    double hddFreeSpace;
+    private double hddFreeSpace;
 
     @Column
-    int onlineStatus;
+    private int onlineStatus;
+
+    @ManyToOne
+    @JoinColumn(name="deviceGroup")
+    private DeviceGroup deviceGroup;
 }

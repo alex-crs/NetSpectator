@@ -2,22 +2,29 @@ package entities;
 
 import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 
 import javax.persistence.*;
+import java.util.List;
 
+@Entity
 @Data
-@Setter
-@Getter
+@NoArgsConstructor
 @Table(name = "DeviceGroup")
 public class DeviceGroup {
     @Id
     @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Basic
-    int id;
+    private int id;
 
     @Column
-    String name;
+    private String title;
+
+    @OneToMany(mappedBy = "deviceGroup", cascade = CascadeType.ALL)
+    private List<Device> device;
 
 }
