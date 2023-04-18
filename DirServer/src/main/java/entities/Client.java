@@ -1,12 +1,20 @@
 package entities;
 
+import io.netty.channel.ChannelHandlerContext;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 @Data
-@NoArgsConstructor
+@RequiredArgsConstructor
 public class Client {
+    private Device device;
     private boolean isAuth = false;
+    @NonNull
+    private ChannelHandlerContext channelHandlerContext;
 
+    @Override
+    public String toString() {
+        return (device.getTitle() != null ? device.getTitle() : "NULL") + ": " + channelHandlerContext;
+    }
 }

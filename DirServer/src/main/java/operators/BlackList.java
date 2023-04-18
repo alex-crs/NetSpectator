@@ -56,7 +56,10 @@ public class BlackList {
             case "add":
                 try {
                     index = Integer.parseInt(args[2]);
-                    NettyBootstrap.blackList.add((NettyBootstrap.connections.get(index - 1)).channel().localAddress());
+                    NettyBootstrap.blackList.add((NettyBootstrap.connections.get(index - 1))
+                            .getChannelHandlerContext()
+                            .channel()
+                            .localAddress());
                 } catch (NumberFormatException e) {
                     messageSender.sendMessageWithHeader("Wrong index format");
                     return false;

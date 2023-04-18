@@ -1,5 +1,6 @@
 package services;
 
+import entities.Client;
 import handlers.ByteBufEncoder;
 import handlers.MainHandler;
 import io.netty.bootstrap.ServerBootstrap;
@@ -20,7 +21,7 @@ public class NettyBootstrap {
     private int PORT;
     private long requestInterval;
     private static final Logger LOGGER = Logger.getLogger(NettyBootstrap.class);
-    public static List<ChannelHandlerContext> connections = new ArrayList<>();
+    public static List<Client> connections = new ArrayList<>();
     public static List<SocketAddress> blackList = new ArrayList<>();
 
     public NettyBootstrap() {

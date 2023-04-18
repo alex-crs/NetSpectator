@@ -18,7 +18,7 @@ public class MessageSender {
         ctx.writeAndFlush(Unpooled.wrappedBuffer((message + messageConstructor()).getBytes()));
     }
 
-    public void sendMessage(String message) {
+    public void sendMessageWithoutHeader(String message) {
         ctx.writeAndFlush(Unpooled.wrappedBuffer((message + "\n").getBytes()));
     }
 

@@ -56,7 +56,11 @@ public class MainClientLogic {
         PORT = Integer.parseInt(connectionParams.get("Port"));
         LOGGER.info(String.format("Порт сервера: [%s]", PORT));
         isInteractive = connectionParams.get("Interactive mode").equals("true");
-        LOGGER.info("Активирован интерактивный режим");
+        if (!isInteractive) {
+            LOGGER.info("Активирован автоматический режим");
+        } else {
+            LOGGER.info("Активирован интерактивный режим");
+        }
         if (connectionParams.get("Client name").equals("")) {
             connectionParams.put("Client name", deviceName());
             ClientFileReader.writeFileParams(connectionParams);
@@ -145,7 +149,7 @@ public class MainClientLogic {
         } catch (SocketException e) {
             LOGGER.error("Connection closed");
             return "close";
-        } catch (IOException e){
+        } catch (IOException e) {
             LOGGER.error("IO exception detected");
             return "close";
         }

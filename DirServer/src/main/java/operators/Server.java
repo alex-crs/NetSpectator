@@ -14,7 +14,7 @@ public class Server {
 
     public void shutdown() {
         if (client.isAuth()) {
-            messageSender.sendMessage("Server shutdown");
+            messageSender.sendMessageWithoutHeader("Server shutdown");
             NettyBootstrap.shutdownServer();
         } else {
             messageSender.sendMessageWithHeader("You are not authorized");

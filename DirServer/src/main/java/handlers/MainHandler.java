@@ -16,13 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 public class MainHandler extends ChannelInboundHandlerAdapter {
-    private Client client;
-    private BlackList blackList;
-    private MessageSender messageSender;
-    private ConnectionsList connectionsList;
     private ChanelListener chanelListener;
-    private Server server;
-    private DataBaseService dbService;
+    private Client client;
     private static final Logger LOGGER = Logger.getLogger(MainHandler.class);
 
     @Override
@@ -30,32 +25,35 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
         cause.printStackTrace();
         ctx.close();
     }
-
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        dbService = new DataBaseService();
+
         System.out.println("Client connected " + ctx.channel().localAddress());
         if (NettyBootstrap.blackList.contains(ctx.channel().localAddress())) {
             ctx.disconnect();
         }
-        NettyBootstrap.connections.add(ctx);
-        client = new Client();
-        messageSender = new MessageSender(ctx, client);
-        blackList = new BlackList(messageSender, client);
-        server = new Server(messageSender, client);
-        connectionsList = new ConnectionsList(messageSender, blackList, client);
-        chanelListener = new ChanelListener(messageSender, connectionsList, blackList, client, server, dbService);
+        connectionInit(ctx);
+        NettyBootstrap.connections.add(client);
     }
-
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        NettyBootstrap.connections.remove(ctx);
+        NettyBootstrap.connections.remove(client);
         System.out.println("Client disconnected " + ctx.channel().localAddress());
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         chanelListener.listen(ctx, msg);
+    }
+
+    private void connectionInit(ChannelHandlerContext ctx){
+        client = new Client(ctx);
+        DataBaseService dbService = new DataBaseService();
+        MessageSender messageSender = new MessageSender(ctx, client);
+        BlackList blackList = new BlackList(messageSender, client);
+        Server server = new Server(messageSender, client);
+        ConnectionsList connectionsList = new ConnectionsList(messageSender, blackList, client);
+        chanelListener = new ChanelListener(messageSender, connectionsList, blackList, client, server, dbService);
     }
 }
 

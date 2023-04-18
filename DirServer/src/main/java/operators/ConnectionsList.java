@@ -46,7 +46,9 @@ public class ConnectionsList {
                 int index = 0;
                 try {
                     index = Integer.parseInt(args[2]);
-                    NettyBootstrap.connections.get(index - 1).disconnect();
+                    NettyBootstrap.connections.get(index - 1)
+                            .getChannelHandlerContext()
+                            .disconnect();
                     NettyBootstrap.connections.remove(index - 1);
                 } catch (NumberFormatException e) {
                     messageSender.sendMessageWithHeader("Wrong index format");

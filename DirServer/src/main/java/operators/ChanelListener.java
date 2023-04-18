@@ -5,8 +5,6 @@ import entities.Device;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.apache.log4j.Logger;
 import services.DataBaseService;
@@ -48,6 +46,9 @@ public class ChanelListener {
                 if (header.length > 1 && header[1].equals(NettyBootstrap.serverParams.get("admin"))) {
                     client.setAuth(true);
                     messageSender.sendMessageWithHeader("Authorization ok");
+                    Device device = new Device(); //убрать этот момент, имя должно браться настоящее
+                    device.setTitle("Admin");
+                    client.setDevice(device);
                 } else {
                     messageSender.sendMessageWithHeader("Wrong key");
                 }
@@ -55,7 +56,7 @@ public class ChanelListener {
             case "\\auth":
                 if (header.length > 1 && header[1].equals(NettyBootstrap.serverParams.get("publicKey"))) {
                     client.setAuth(true);
-                    messageSender.sendMessage("getId");
+                    messageSender.sendMessageWithoutHeader("getId");
                 } else {
                     NettyBootstrap.blackList.add(ctx.channel().localAddress());
                     ctx.disconnect();
@@ -70,7 +71,7 @@ public class ChanelListener {
                 } else {
                     uuid = header[1];
                 }
-                messageSender.sendMessage("getName");
+                messageSender.sendMessageWithoutHeader("getName");
                 break;
             case "/connections":
                 if (!connections.connectionListOperator(ctx, header)) {
@@ -97,6 +98,7 @@ public class ChanelListener {
 
     private void deviceInit(ChannelHandlerContext ctx, String[] args) {
         Device device = new Device();
+        client.setDevice(device);
         device.setTitle(args[1]);
         device.setUUID(uuid);
         device.setOnlineStatus(1);
