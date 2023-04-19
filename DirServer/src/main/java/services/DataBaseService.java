@@ -6,9 +6,9 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
+
 import javax.persistence.NoResultException;
 import javax.transaction.Transactional;
-import java.util.Optional;
 
 @Transactional
 public class DataBaseService {
@@ -16,7 +16,7 @@ public class DataBaseService {
 
     SessionFactory factory = new Configuration() //удалить
             .configure("hibernate.cfg.xml")
-            .addAnnotatedClass(Device.class)
+//            .addAnnotatedClass(Device.class)
             .buildSessionFactory();
     Session session = null;
 
@@ -47,6 +47,21 @@ public class DataBaseService {
         Device device = null;
         try {
             device = (Device) session.createQuery("from Device where UUID=:uuid").setParameter("uuid", uuid).getSingleResult();
+        } catch (NoResultException e) {
+            session.getTransaction().commit();
+            return null;
+        }
+        session.getTransaction().commit();
+        return device;
+    }
+
+    public Device changeDeviceStatus(String title) {
+        session = factory.getCurrentSession();
+        session.beginTransaction();
+        Device device = null;
+        try {
+            device = (Device) session.createQuery("from Device where title=:title").setParameter("title", title).getSingleResult();
+            device.setOnlineStatus(0);
         } catch (NoResultException e) {
             session.getTransaction().commit();
             return null;

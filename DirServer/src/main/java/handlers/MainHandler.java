@@ -18,6 +18,7 @@ import java.util.UUID;
 public class MainHandler extends ChannelInboundHandlerAdapter {
     private ChanelListener chanelListener;
     private Client client;
+    private DataBaseService dbService;
     private static final Logger LOGGER = Logger.getLogger(MainHandler.class);
 
     @Override
@@ -37,6 +38,7 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
     }
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        dbService.changeDeviceStatus(client.getDevice().getTitle());
         NettyBootstrap.connections.remove(client);
         System.out.println("Client disconnected " + ctx.channel().localAddress());
     }
@@ -48,7 +50,7 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
 
     private void connectionInit(ChannelHandlerContext ctx){
         client = new Client(ctx);
-        DataBaseService dbService = new DataBaseService();
+        dbService = new DataBaseService();
         MessageSender messageSender = new MessageSender(ctx, client);
         BlackList blackList = new BlackList(messageSender, client);
         Server server = new Server(messageSender, client);

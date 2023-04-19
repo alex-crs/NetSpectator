@@ -126,7 +126,7 @@ public class MainClientLogic {
                         break;
                     case "newID":
                         connectionParams.put("Client ID", query[1]);
-                        ClientFileReader.writeFileParams(connectionParams); //закончил тут
+                        ClientFileReader.writeFileParams(connectionParams);
                         LOGGER.info(String.format("Клиенту присвоен новый ID: [%s]", query[1]));
                         break;
                     case "getName":
