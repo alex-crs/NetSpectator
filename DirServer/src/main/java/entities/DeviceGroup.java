@@ -13,7 +13,7 @@ import java.util.List;
 @Entity
 @Data
 @NoArgsConstructor
-@Table(name = "DeviceGroup")
+@Table(name = "device_group")
 public class DeviceGroup {
     @Id
     @Column(name = "id")

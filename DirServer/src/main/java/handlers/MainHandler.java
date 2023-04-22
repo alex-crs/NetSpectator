@@ -28,7 +28,6 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
     }
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-
         System.out.println("Client connected " + ctx.channel().localAddress());
         if (NettyBootstrap.blackList.contains(ctx.channel().localAddress())) {
             ctx.disconnect();
@@ -38,7 +37,7 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
     }
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        dbService.changeDeviceStatus(client.getDevice().getTitle());
+        dbService.changeDeviceStatus(client.getDevice().getUUID(),false);
         NettyBootstrap.connections.remove(client);
         System.out.println("Client disconnected " + ctx.channel().localAddress());
     }

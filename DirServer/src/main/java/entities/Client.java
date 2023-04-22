@@ -17,4 +17,6 @@ public class Client {
     public String toString() {
         return (device.getTitle() != null ? device.getTitle() : "NULL") + ": " + channelHandlerContext;
     }
+
+
 }

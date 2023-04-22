@@ -1,7 +1,10 @@
 package operators;
 
 import entities.Client;
+import services.DataBaseService;
 import services.NettyBootstrap;
+
+import java.util.function.Consumer;
 
 public class Server {
     private final MessageSender messageSender;

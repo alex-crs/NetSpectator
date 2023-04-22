@@ -9,12 +9,12 @@ import javax.persistence.*;
 @Data
 @NoArgsConstructor
 @Entity
-@Table(name = "Device")
+@Table(name = "device")
 public class Device {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private int id;
+    private Long id;
 
     @Column
     private String UUID;
@@ -28,10 +28,10 @@ public class Device {
     @Column
     private double hddFreeSpace;
 
-    @Column
+    @Column(name = "online_status")
     private int onlineStatus;
 
     @ManyToOne
-    @JoinColumn(name="deviceGroup")
+    @JoinColumn(name="group_id")
     private DeviceGroup deviceGroup;
 }

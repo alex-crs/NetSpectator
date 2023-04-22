@@ -97,16 +97,17 @@ public class ChanelListener {
     }
 
     private void deviceInit(ChannelHandlerContext ctx, String[] args) {
-        Device device = new Device();
-        client.setDevice(device);
-        device.setTitle(args[1]);
-        device.setUUID(uuid);
-        device.setOnlineStatus(1);
+        Device device = dbService.getDeviceByUUID(uuid);
+        if (device == null) {
+            device = new Device();
+            device.setTitle(args[1]);
+            device.setUUID(uuid);
+            LOGGER.info(dbService.addDevice(device) > 0 ? "Клиент успешно добавлен в базу" : "Ошибка добавления клиента в базу");
+        }
+        dbService.changeDeviceStatus(uuid,true);
         device.setIp(ctx.channel().localAddress()
                 .toString()
                 .replace("/", ""));
-        if (dbService.getDeviceByUUID(uuid) == null && dbService.addDevice(device) > 0) {
-            LOGGER.info("Operation complete");
-        }
+        client.setDevice(device);
     }
 }

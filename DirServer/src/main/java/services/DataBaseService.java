@@ -1,6 +1,7 @@
 package services;
 
 import entities.Device;
+import entities.DeviceGroup;
 import org.apache.log4j.Logger;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -36,6 +37,9 @@ public class DataBaseService {
     public int addDevice(Device device) {
         session = factory.getCurrentSession();
         session.beginTransaction();
+        DeviceGroup deviceGroup = (DeviceGroup) session.createQuery("from DeviceGroup where title=:title")
+                .setParameter("title","main").getSingleResult();
+        device.setDeviceGroup(deviceGroup);
         session.save(device);
         session.getTransaction().commit();
         return -1;
@@ -55,19 +59,18 @@ public class DataBaseService {
         return device;
     }
 
-    public Device changeDeviceStatus(String title) {
+    public void changeDeviceStatus(String uuid, boolean status) {
         session = factory.getCurrentSession();
         session.beginTransaction();
         Device device = null;
         try {
-            device = (Device) session.createQuery("from Device where title=:title").setParameter("title", title).getSingleResult();
-            device.setOnlineStatus(0);
+            device = (Device) session.createQuery("from Device where UUID=:uuid").setParameter("uuid", uuid).getSingleResult();
+            device.setOnlineStatus(status ? 1 : 0);
         } catch (NoResultException e) {
             session.getTransaction().commit();
-            return null;
+            return;
         }
         session.getTransaction().commit();
-        return device;
     }
 
     //удаляет выбранное устройство из базы данных
