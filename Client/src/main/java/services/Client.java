@@ -17,7 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-public class MainClientLogic {
+public class Client {
     private DataOutputStream out;
     private DataInputStream in;
     private ReadableByteChannel rbc;
@@ -28,15 +28,23 @@ public class MainClientLogic {
     private String ADDRESS;
     private int PORT;
     private boolean isInteractive;
-    private static final Logger LOGGER = Logger.getLogger(MainClientLogic.class);
+    private static final Logger LOGGER = Logger.getLogger(Client.class);
 
     public HashMap<String, String> getServerParams() {
         return connectionParams;
     }
 
-    public MainClientLogic() {
+    public Client() {
         paramsInit();
-        tryToConnect();
+        while (true) {
+            LOGGER.info(String.format("Попытка установить соединение с сервером [%s:%s]", ADDRESS, PORT));
+            tryToConnect();
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private void tryToConnect() {
@@ -49,7 +57,30 @@ public class MainClientLogic {
     }
 
     private void paramsInit() {
-        connectionParams = ClientFileReader.initFileParams("client.ini");
+        connectionParams = IniFileOperator.initFileParams("client.ini");
+        System.out.println("=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=\n" +
+                "\n" +
+                " ##   ##    #####  ####### \n" +
+                " ###  ##   ##        ##    \n" +
+                " #### ##  ##         ##    \n" +
+                " #######  ######     ##    \n" +
+                " ## ####  ##         ##    \n" +
+                " ##  ###  ##         ##    \n" +
+                " ##   ##  #######    ##    \n" +
+                "                           \n" +
+                "   ####     ####     #####    ####   #######    ##     #######   ####      ####  \n" +
+                "  ##  ##   ##  ##   ##       ##  ##    ##      ####      ##     ##  ##    ##  ## \n" +
+                " ##       ##   ##  ##       ##         ##      ## ##     ##     ##   ##  ##   ## \n" +
+                "  #####   ######   ######   ##         ##     ##   ##    ##     ##   ##  ######  \n" +
+                "      ##  ##       ##       ##   ##    ##     #######    ##     ##   ##  ####    \n" +
+                " ##   ##  ##       ##       ##  ##     ##     ##   ##    ##     ##   ##  ## ##   \n" +
+                "  #####   ##       #######   ####      ##     ##   ##    ##      #####   ##  ##  \n" +
+                "                                                                                 \n" +
+                "=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=\n" +
+                "\n" +
+                "----------------------------------2023-------------------------------------------\n" +
+                "\n" +
+                "-------------------------------Start client--------------------------------------");
         assert connectionParams != null;
         ADDRESS = connectionParams.get("Address");
         LOGGER.info(String.format("Адрес сервера: [%s]", ADDRESS));
@@ -63,7 +94,7 @@ public class MainClientLogic {
         }
         if (connectionParams.get("Client name").equals("")) {
             connectionParams.put("Client name", deviceName());
-            ClientFileReader.writeFileParams(connectionParams);
+            IniFileOperator.writeFileParams(connectionParams);
         }
     }
 
@@ -79,7 +110,7 @@ public class MainClientLogic {
                 return 1;
             }
         } catch (IOException e) {
-            LOGGER.info(String.format("Невозможно установить соединение с сервером по адресу [%s:%s]", ADDRESS, PORT));
+            LOGGER.info(String.format("Не удалось установить соединение с сервером по адресу [%s:%s]", ADDRESS, PORT));
             return -1;
         }
         return 0;
@@ -126,7 +157,7 @@ public class MainClientLogic {
                         break;
                     case "newID":
                         connectionParams.put("Client ID", query[1]);
-                        ClientFileReader.writeFileParams(connectionParams);
+                        IniFileOperator.writeFileParams(connectionParams);
                         LOGGER.info(String.format("Клиенту присвоен новый ID: [%s]", query[1]));
                         break;
                     case "getName":

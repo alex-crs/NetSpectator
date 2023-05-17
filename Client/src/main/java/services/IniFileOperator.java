@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ClientFileReader {
+public class IniFileOperator {
     public static HashMap<String, String> initFileParams(String fileName) {
         HashMap<String, String> params = new HashMap<>();
         File iniFile = new File(fileName);
