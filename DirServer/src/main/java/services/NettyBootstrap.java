@@ -1,6 +1,6 @@
 package services;
 
-import entities.Client;
+import entities.Connection;
 import handlers.ByteBufEncoder;
 import handlers.MainHandler;
 import io.netty.bootstrap.ServerBootstrap;
@@ -13,6 +13,9 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class NettyBootstrap {
     private static EventLoopGroup auth;
@@ -21,7 +24,7 @@ public class NettyBootstrap {
     private int PORT;
     private long requestInterval;
     private static final Logger LOGGER = Logger.getLogger(NettyBootstrap.class);
-    public static List<Client> connections = new ArrayList<>();
+    public static List<Connection> connections = new ArrayList<>();
     public static List<SocketAddress> blackList = new ArrayList<>();
 
     public NettyBootstrap() {

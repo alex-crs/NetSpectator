@@ -1,23 +1,17 @@
 package handlers;
 
-import entities.Client;
-import operators.*;
+import entities.Connection;
+import stringHandlers.*;
+import services.ChanelListener;
 import services.DataBaseService;
 import services.NettyBootstrap;
-import entities.Device;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.apache.log4j.Logger;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
-
 public class MainHandler extends ChannelInboundHandlerAdapter {
     private ChanelListener chanelListener;
-    private Client client;
+    private Connection client;
     private DataBaseService dbService;
     private static final Logger LOGGER = Logger.getLogger(MainHandler.class);
 
@@ -48,7 +42,7 @@ public class MainHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void connectionInit(ChannelHandlerContext ctx){
-        client = new Client(ctx);
+        client = new Connection(ctx);
         dbService = new DataBaseService();
         MessageSender messageSender = new MessageSender(ctx, client);
         BlackList blackList = new BlackList(messageSender, client);

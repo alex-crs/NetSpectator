@@ -1,6 +1,8 @@
 package services;
 
 
+import config.IniFileOperator;
+import config.Logo;
 import org.apache.log4j.Logger;
 
 import java.io.*;
@@ -15,6 +17,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 public class Client {
@@ -22,19 +26,21 @@ public class Client {
     private DataInputStream in;
     private ReadableByteChannel rbc;
     private ExecutorService threadManager;
-    private ByteBuffer byteBuffer = ByteBuffer.allocate(8 * 1024);
-    private HashMap<String, String> connectionParams;
+    private final ByteBuffer byteBuffer = ByteBuffer.allocate(8 * 1024);
+    private static HashMap<String, String> clientParams;
     private Socket socket;
     private String ADDRESS;
     private int PORT;
     private boolean isInteractive;
+    private ScheduledExecutorService executor;
     private static final Logger LOGGER = Logger.getLogger(Client.class);
 
-    public HashMap<String, String> getServerParams() {
-        return connectionParams;
+    public static String getClientParams(String param) {
+        return clientParams.get(param);
     }
 
     public Client() {
+        executor = Executors.newSingleThreadScheduledExecutor();
         paramsInit();
         while (true) {
             LOGGER.info(String.format("Попытка установить соединение с сервером [%s:%s]", ADDRESS, PORT));
@@ -47,55 +53,21 @@ public class Client {
         }
     }
 
-    private void tryToConnect() {
-        int connectionResult = connect();
-        if (connectionResult > 0 && isInteractive) {
-            interactiveClientWorker();
-        } else if (connectionResult > 0) {
-            automaticClientWorker();
-        }
-    }
-
     private void paramsInit() {
-        connectionParams = IniFileOperator.initFileParams("client.ini");
-        System.out.println("=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=\n" +
-                "\n" +
-                " ##   ##    #####  ####### \n" +
-                " ###  ##   ##        ##    \n" +
-                " #### ##  ##         ##    \n" +
-                " #######  ######     ##    \n" +
-                " ## ####  ##         ##    \n" +
-                " ##  ###  ##         ##    \n" +
-                " ##   ##  #######    ##    \n" +
-                "                           \n" +
-                "   ####     ####     #####    ####   #######    ##     #######   ####      ####  \n" +
-                "  ##  ##   ##  ##   ##       ##  ##    ##      ####      ##     ##  ##    ##  ## \n" +
-                " ##       ##   ##  ##       ##         ##      ## ##     ##     ##   ##  ##   ## \n" +
-                "  #####   ######   ######   ##         ##     ##   ##    ##     ##   ##  ######  \n" +
-                "      ##  ##       ##       ##   ##    ##     #######    ##     ##   ##  ####    \n" +
-                " ##   ##  ##       ##       ##  ##     ##     ##   ##    ##     ##   ##  ## ##   \n" +
-                "  #####   ##       #######   ####      ##     ##   ##    ##      #####   ##  ##  \n" +
-                "                                                                                 \n" +
-                "=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=\n" +
-                "\n" +
-                "----------------------------------2023-------------------------------------------\n" +
-                "\n" +
-                "-------------------------------Start client--------------------------------------");
-        assert connectionParams != null;
-        ADDRESS = connectionParams.get("Address");
+        clientParams = IniFileOperator.initFileParams("client.ini");
+        System.out.println(Logo.showLogo());
+        assert clientParams != null;
+        ADDRESS = clientParams.get("Address");
         LOGGER.info(String.format("Адрес сервера: [%s]", ADDRESS));
-        PORT = Integer.parseInt(connectionParams.get("Port"));
+        PORT = Integer.parseInt(clientParams.get("Port"));
         LOGGER.info(String.format("Порт сервера: [%s]", PORT));
-        isInteractive = connectionParams.get("Interactive mode").equals("true");
+        isInteractive = clientParams.get("Interactive mode").equals("true");
         if (!isInteractive) {
             LOGGER.info("Активирован автоматический режим");
         } else {
             LOGGER.info("Активирован интерактивный режим");
         }
-        if (connectionParams.get("Client name").equals("")) {
-            connectionParams.put("Client name", deviceName());
-            IniFileOperator.writeFileParams(connectionParams);
-        }
+        clientParams.put("Client name", deviceName());
     }
 
     private int connect() {
@@ -116,7 +88,17 @@ public class Client {
         return 0;
     }
 
-    private void interactiveClientWorker() {
+    private void tryToConnect() {
+        int connectionResult = connect();
+        if (connectionResult > 0 && isInteractive) {
+            interactiveMode();
+        } else if (connectionResult > 0) {
+            automaticModeInit();
+
+        }
+    }
+
+    private void interactiveMode() {
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             StringBuilder command = new StringBuilder();
@@ -144,27 +126,30 @@ public class Client {
         }
     }
 
-    private void automaticClientWorker() {
+    private void automaticModeInit() {
         String[] query;
-        boolean keepAliveStatus = true;
+        boolean keepAlive = true;
         try {
-            out.write(("\\auth " + connectionParams.get("Public key")).getBytes());
-            while (keepAliveStatus) {
+            out.write(("\\auth " + clientParams.get("Public key")).getBytes());
+            while (keepAlive) {
                 query = queryStringListener().replace("\n", "").split(" ");
                 switch (query[0]) {
                     case "getId":
-                        out.write(("\\clientID " + connectionParams.get("Client ID")).getBytes());
+                        out.write(("\\clientID " + clientParams.get("Client ID")).getBytes());
                         break;
                     case "newID":
-                        connectionParams.put("Client ID", query[1]);
-                        IniFileOperator.writeFileParams(connectionParams);
+                        clientParams.put("Client ID", query[1]);
+                        IniFileOperator.writeFileParams(clientParams);
                         LOGGER.info(String.format("Клиенту присвоен новый ID: [%s]", query[1]));
                         break;
                     case "getName":
-                        out.write(("\\clientName " + connectionParams.get("Client name")).getBytes());
+                        out.write(("\\clientName " + clientParams.get("Client name")).getBytes());
+                        break;
+                    case "startSensors":
+                        executor.scheduleAtFixedRate(new DeviceListener(out), 0, 5, TimeUnit.SECONDS);
                         break;
                     case "close":
-                        keepAliveStatus = false;
+                        keepAlive = false;
                         break;
                 }
             }

@@ -11,6 +11,7 @@
     <modules>
         <module>DirServer</module>
         <module>Client</module>
+        <module>api</module>
     </modules>
 
     <properties>
